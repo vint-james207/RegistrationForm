@@ -1,5 +1,8 @@
 package com.james;
 
+import jodd.json.JsonParser;
+import jodd.json.JsonSerializer;
+import jodd.json.meta.JSON;
 import org.h2.tools.Server;
 import spark.Spark;
 
@@ -35,11 +38,11 @@ public class Main {
         stmt.setString(3, user.email);
         stmt.execute();
     }
-    public static void updateUser(Connection conn, int id, String username, String address, String email) throws SQLException {
+    public static void updateUser(Connection conn, int id, User user) throws SQLException {
         PreparedStatement stmt = conn.prepareStatement("UPDATE users SET username = ?, address = ?, email = ? WHERE id = ?");
-        stmt.setString(1, username);
-        stmt.setString(2, address);
-        stmt.setString(3, email);
+        stmt.setString(1, user.username);
+        stmt.setString(2, user.address);
+        stmt.setString(3, user.email);
         stmt.setInt(4, id);
         stmt.execute();
     }
@@ -56,5 +59,47 @@ public class Main {
         createTables(conn);
 
         Spark.externalStaticFileLocation("public");
+
+        JsonSerializer serializer = new JsonSerializer();
+
+        Spark.get(
+                "/user",
+                (request, response) -> {
+                    ArrayList<User> users = selectUsers(conn);
+                    return serializer.serialize(users);
+                }
+        );
+
+        Spark.post(
+                "/user",
+                (request, response) -> {
+                    String body = request.body();
+                    JsonParser parser = new JsonParser();
+                    User user = parser.parse(body, User.class);
+                    insertUser(conn, user);
+                    return "";
+                }
+        );
+
+        Spark.put(
+                "/user",
+                (request, response) -> {
+                    String body = request.body();
+                    JsonParser parser = new JsonParser();
+                    User user = parser.parse(body, User.class);
+                    updateUser(conn, user.id, user);
+                    return "";
+                }
+        );
+
+        Spark.delete(
+                "/user/:id",
+                (request, response) -> {
+                    int id = Integer.valueOf(request.params(":id"));
+                    deleteUser(conn, id);
+                    return "";
+                }
+        );
+
     }
 }

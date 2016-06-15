@@ -35,7 +35,8 @@ public class MainTest {
         Connection conn = startConnection();
         User james = new User(1, "James", "45 address", "me@me.com");
         Main.insertUser(conn, james);
-        Main.updateUser(conn, 1, "Jamesy", "101 address", "you@you.com");
+        User temp = new User(1, "Jamesy", "101 address", "you@you.com");
+        Main.updateUser(conn, temp.id, temp);
         ArrayList<User> users = Main.selectUsers(conn);
         james = users.get(0);
         conn.close();
